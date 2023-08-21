@@ -2,7 +2,6 @@ from tkinter import *
 from pytube import YouTube
 from pytube import Playlist
 import os
-import re
 
 # Window Creation
 window = Tk()
@@ -13,35 +12,87 @@ window.configure(bg="#eee")
 
 def download():
     url = str(urlInput.get())
-    outFile = ""
+    fileType = str(FileClick.get())
+    if (fileType == "File Type:"):
+        fileType = "mp4"
+
+    audioQuality = str(AudioClick.get())
+    if (audioQuality == "Audio Quality:"):
+        audioQuality = "High Quality"
+
+    videoQuality = str(VideoClick.get())
+    if (videoQuality == "Video Quality:"):
+        videoQuality = "High quality"
+    video = ""
+
     destination = str(filePathInput.get())
     if ("playlist" in url):
         url = Playlist(url)
-        for video in url.videos:
-            video._video_regex = re.compile(r"\"url\":\"(/watch\?v=[\w-]*)")
-            video = video.streams.filter(only_audio=True).first()
+        for url in url.videos:
+            if (fileType == "mp3"):
+                if (audioQuality == "High Quality"):
+                    video = url.streams.filter(only_audio=True).order_by('abr').desc().first()
+                elif (audioQuality == "Low Quality"):
+                    video = url.streams.filter(only_audio=True).order_by('abr').desc().last()
+            elif (fileType == "mp4"):
+                if (videoQuality == "High Quality"):
+                    video = url.streams.filter(file_extension="mp4", progressive=True).order_by('resolution').desc().first()
+                elif (videoQuality == "Low Quality"):
+                    video = url.streams.filter(file_extension="mp4", progressive=True).order_by('resolution').desc().last()
             outFile = video.download(output_path=destination)
             if (outFile != ""):
                 base, ext = os.path.splitext(outFile)
-                newFile = base + '.mp3'
+                newFile = base + "." + fileType
                 os.rename(outFile, newFile)
     else:
         url = YouTube(url)
-        video = url.streams.filter(only_audio=True).first()
+        if (fileType == "mp3"):
+            if (audioQuality == "High Quality"):
+                video = url.streams.filter(only_audio=True).order_by('abr').desc().first()
+            elif(audioQuality == "Low Quality"):
+                video = url.streams.filter(only_audio=True).order_by('abr').desc().last()
+        elif (fileType == "mp4"):
+            if (videoQuality == "High Quality"):
+                video = url.streams.filter(file_extension="mp4", progressive=True).order_by('resolution').desc().first()
+            elif (videoQuality == "Low Quality"):
+                video = url.streams.filter(file_extension="mp4", progressive=True).order_by('resolution').desc().last()
         outFile = video.download(output_path=destination)
         if (outFile != ""):
             base, ext = os.path.splitext(outFile)
-            newFile = base + '.mp3'
+            newFile = base + "." + fileType
             os.rename(outFile, newFile)
+
 
 # Elements
 Label(text="Enter YouTube video/playlist url", font=40, fg="black").pack()
 Label(text="Click DOWNLOAD to start", font=35, fg="black").pack()
+
 urlInput = Entry(window, width=32)
 urlInput.pack()
+
 Label(text="Enter complete file output path:", font=35, fg="black").pack()
+
 filePathInput = Entry(width=32)
 filePathInput.pack()
+
+fileOptions = ["mp3","mp4"]
+FileClick = StringVar()
+FileClick.set("File Type:")
+FileDrop = OptionMenu(window, FileClick, *fileOptions)
+FileDrop.pack()
+
+audioOptions = ["High Quality", "Low Quality"]
+AudioClick = StringVar()
+AudioClick.set("Audio Quality:")
+AudioDrop = OptionMenu(window, AudioClick, *audioOptions)
+AudioDrop.pack()
+
+videoOptions = ["High Quality", "Low Quality"]
+VideoClick = StringVar()
+VideoClick.set("Video Quality:")
+VideoDrop = OptionMenu(window, VideoClick, *videoOptions)
+VideoDrop.pack()
+
 button = Button(text="Download", command=download, width=8, height=2, fg="red").pack(pady=20)
 
 window.mainloop()
